@@ -9,10 +9,12 @@ lock = threading.Lock()
 
 def profile(cumulative=True, print_stats=0, sort_stats='cumulative',
             dump_stats=False, profile_filename='profilestats.out',
-            callgrind_filename='callgrind.out'):
+            callgrind_filename='callgrind.out', should_profile=None):
     def closure(func):
         @wraps(func)
         def decorator(*args, **kwargs):
+            if should_profile is not None and not should_profile():
+                return func(*args, **kwargs)
             result = None
             if cumulative:
                 global profiler
