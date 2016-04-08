@@ -13,7 +13,7 @@ def profile(cumulative=True, print_stats=0, sort_stats='cumulative',
     def closure(func):
         @wraps(func)
         def decorator(*args, **kwargs):
-            if should_profile is not None and not should_profile():
+            if should_profile and not should_profile():
                 return func(*args, **kwargs)
             result = None
             if cumulative:
@@ -23,18 +23,19 @@ def profile(cumulative=True, print_stats=0, sort_stats='cumulative',
             try:
                 result = profiler.runcall(func, *args, **kwargs)
             finally:
-                with lock:
+                if lock.acquire(False):
                     if dump_stats:
                         profiler.dump_stats(profile_filename)
-                    if callgrind_filename is None:
-                        return result
-                    stats = pstats.Stats(profiler)
-                    conv = pyprof2calltree.CalltreeConverter(stats)
-                    with open(callgrind_filename, 'w') as fd:
-                        conv.output(fd)
-                    if print_stats:
-                        stats.strip_dirs().sort_stats(
-                            sort_stats).print_stats(print_stats)
+                    if callgrind_filename:
+                        stats = pstats.Stats(profiler)
+                        conv = pyprof2calltree.CalltreeConverter(stats)
+                        with open(callgrind_filename, 'w') as fd:
+                            conv.output(fd)
+                        if print_stats:
+                            stats.strip_dirs().sort_stats(
+                                sort_stats).print_stats(print_stats)
+                    lock.release()
+                    return result
             return result
         return decorator
     return closure
