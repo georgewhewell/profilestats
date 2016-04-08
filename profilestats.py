@@ -24,6 +24,8 @@ def profile(cumulative=True, print_stats=0, sort_stats='cumulative',
                 with lock:
                     if dump_stats:
                         profiler.dump_stats(profile_filename)
+                    if callgrind_filename is None:
+                        return result
                     stats = pstats.Stats(profiler)
                     conv = pyprof2calltree.CalltreeConverter(stats)
                     with open(callgrind_filename, 'w') as fd:
